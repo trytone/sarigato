@@ -1,45 +1,40 @@
 <?php
 namespace App\Repository;
 
-use App\Entity\User;
-use App\Entity\Database;
-
 class UserRepository
 {
     private $database;
 
     public function __construct(){
-      $this->database = new \mysqli("localhost","root","","sarigato");
+      $this->database = new \PDO("mysql:host=".$_ENV['DB_HOST'].";dbname=".$_ENV['DB_NAME'], $_ENV['DB_USER'], $_ENV['DB_PASS']);
     }
 
-    public function find(int $id): array
+    public function find(int $id)
     {
-      $query = $this->database->query("SELECT id, email, password FROM `users` WHERE id = ".intval($id)." LIMIT 1");
-      if($query){
-        $result = $query->fetch_assoc();
-        if($result){
-          return $result;
-        }
-      }
-      return [];
+      $query = $this->database->prepare("SELECT id, email, password FROM `users` WHERE id = ? LIMIT 1");
+      $query->execute([intval($id)]); // sql injection prevent by binding values and intval
+      return $query->fetch(\PDO::FETCH_ASSOC);
     }
 
-    public function add(User &$user): bool
+    public function add(array $userArray): int
     {
-        return $this->database->query(
-          'INSERT INTO `users` (email, password) VALUES (\''.$user->getEmail().'\',\''.$user->getPassword().'\')'
-        );
+      if(!filter_var($userArray['email'], FILTER_VALIDATE_EMAIL)) return 0;
+      $query = $this->database->prepare("INSERT INTO `users` (email, password) VALUES (?,?)");
+      $query->execute([$userArray['email'], hash('sha512', $userArray['password'] )]); // sql injection prevent by binding values
+      return $this->database->lastInsertId();
     }
 
-    public function update(User &$user): bool
+    public function update(array $userArray): bool
     {
-      return $this->database->query(
-        'UPDATE `users` SET email = \''.$user->getEmail().'\', password = \''.$user->getPassword().'\' WHERE id = '.$user->getId());
+      if(!filter_var($userArray['email'], FILTER_VALIDATE_EMAIL)) return false;
+      $query = $this->database->prepare("UPDATE `users` SET email = ?, password = ? WHERE id = ?");
+      return $query->execute([$userArray['email'], hash('sha512', $userArray['password'] ), intval($userArray['id'])]); // sql injection prevent
     }
 
     public function remove(int $id): bool
     {
-        return $this->database->query("DELETE FROM `users` WHERE id =".intval($id));
+        $query = $this->database->prepare("DELETE FROM `users` WHERE id = ?");
+        return $query->execute([intval($id)]);
     }
 
 }

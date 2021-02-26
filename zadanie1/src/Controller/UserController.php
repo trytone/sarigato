@@ -9,7 +9,6 @@ use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 
-use App\Entity\User;
 use App\Repository\UserRepository;
 
 class UserController extends AbstractController
@@ -23,37 +22,51 @@ class UserController extends AbstractController
     public function getAction(int $id): JsonResponse
     {
       $userArray = $this->repository->find($id);
-      return new JsonResponse(json_encode($userArray));
+      // return user or null
+      return new JsonResponse( ($userArray ? $userArray : NULL) );
     }
 
     public function createAction(Request $request): JsonResponse
     {
-        $data = $request->toArray();
+        $json = $this->decode($request);
+        if(!$json) return new JsonResponse(['status' => 'error', 'message' => 'JSON syntax error.']);
 
-        $userEntity = new User();
-        $userEntity->setEmail($data['email']);
-        $userEntity->setPassword($data['password']);
+        $userId = $this->repository->add([
+          'email' => $json['email'],
+          'password' => $json['password']
+        ]);
 
-        $this->repository->add($userEntity);
-
-        return new JsonResponse((array)$userEntity ?? ['error' => 'Error while creating user. Check if email is valid.']);
+        // return user_id or error
+        return new JsonResponse(
+          ($userId ? ['status' => 'success',  'user_id'  => $userId] : ['status' => 'error', 'message' => 'E-mail not valid.'])
+        );
     }
 
     public function updateAction(int $id, Request $request): JsonResponse
     {
-        $data = $request->toArray();
+        $json = $this->decode($request);
+        if(!$json) return new JsonResponse(['status' => 'error', 'message' => 'JSON syntax error.']);
 
-        $userEntity = $this->repository->find($id);
-        $userEntity->setEmail($data['email']);
-        $userEntity->setPassword($data['password']);
+        $userArray['id'] = $id;
+        $userArray['email'] = $json['email'];
+        $userArray['password'] = $json['password'];
 
-        $this->repository->update($userEntity);
+        $result = $this->repository->update($userArray);
 
-        return new JsonResponse($userEntity ?? ['error' => 'No user found.']);
+        return new JsonResponse(($result ? ['status' => 'success'] : ['status' => 'error', 'message' => 'E-mail not valid.'] ));
     }
 
     public function deleteAction(int $id): JsonResponse
     {
-        return new JsonResponse(['status' => $this->repository->remove($id)]);
+        $result = $this->repository->remove($id);
+        return new JsonResponse(['status' => ($result ? 'success' : 'error')]);
+    }
+
+    private function decode(Request $request){
+      try{
+        return $request->toArray();
+      } catch(\Exception $e){
+        return false;
+      }
     }
 }
