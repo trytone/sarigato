@@ -1,3 +1,27 @@
-#index:
-#    path: /
-#    controller: App\Controller\DefaultController::index
+getUser:
+    path: /users/{id}
+    controller: App\Controller\UserController::getAction
+    methods:    GET
+    requirements:
+        id: '\d+'
+
+addUser:
+    path: /users
+    controller: App\Controller\UserController::createAction
+    methods:    PUT
+    requirements:
+        id: '\d+'
+
+updateUser:
+    path: /users/{id}
+    controller: App\Controller\UserController::updateAction
+    methods:    POST
+    requirements:
+        id: '\d+'
+
+deleteUser:
+    path: /users/{id}
+    controller: App\Controller\UserController::deleteAction
+    methods:    DELETE
+    requirements:
+        id: '\d+'
