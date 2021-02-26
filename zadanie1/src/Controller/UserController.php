@@ -30,6 +30,7 @@ class UserController extends AbstractController
     {
         $json = $this->decode($request);
         if(!$json) return new JsonResponse(['status' => 'error', 'message' => 'JSON syntax error.']);
+		if(!array_key_exists('email', $json) || !array_key_exists('email', $json) ) return new JsonResponse(['status' => 'error', 'message' => 'Missing email or password.']);
 
         $userId = $this->repository->add([
           'email' => $json['email'],
@@ -45,13 +46,15 @@ class UserController extends AbstractController
     public function updateAction(int $id, Request $request): JsonResponse
     {
         $json = $this->decode($request);
+		
         if(!$json) return new JsonResponse(['status' => 'error', 'message' => 'JSON syntax error.']);
+		if(!array_key_exists('email', $json) || !array_key_exists('email', $json) ) return new JsonResponse(['status' => 'error', 'message' => 'Missing email or password.']);
 
-        $userArray['id'] = $id;
-        $userArray['email'] = $json['email'];
-        $userArray['password'] = $json['password'];
-
-        $result = $this->repository->update($userArray);
+        $result = $this->repository->update([
+			'id' => $id,
+			'email' => $json['email'],
+			'password' => $json['password']
+		]);
 
         return new JsonResponse(($result ? ['status' => 'success'] : ['status' => 'error', 'message' => 'E-mail not valid.'] ));
     }
