@@ -1,0 +1,24 @@
+1. Nazwiska pracowników i nazw działów, w których są zatrudnieni
+
+	SELECT pracownik.nazwisko, dzial.nazwa FROM pracownik
+	INNER JOIN dzial ON (dzial.id = pracownik.dzial_id)
+
+2. Nazwy działów i liczbę pracowników w każdym z nich
+
+	SELECT dzial.nazwa,COUNT(pracownik.id) as liczbaPracownikow FROM pracownik
+	INNER JOIN dzial ON (dzial.id = pracownik.dzial_id)
+	GROUP BY dzial.id
+
+3. Działów niemających żadnego pracownika
+
+	SELECT dzial.nazwa,COUNT(pracownik.id) as liczbaPracownikow FROM dzial
+	LEFT JOIN pracownik ON (pracownik.dzial_id = dzial.id)
+	GROUP BY dzial.id
+	HAVING(liczbaPracownikow) = 0
+
+4. Działów posiadających co najmniej 2 pracowników
+
+	SELECT dzial.nazwa,COUNT(pracownik.id) as liczbaPracownikow FROM dzial
+	LEFT JOIN pracownik ON (pracownik.dzial_id = dzial.id)
+	GROUP BY dzial.id
+	HAVING(liczbaPracownikow) >= 2
