@@ -14,14 +14,19 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 class EmailValidationCommand extends Command
 {
     protected static $defaultName = 'email:check';
+	
+	private $files = [
+		'success' => ".\\output\\success.csv",
+		'error'   => ".\\output\\error.csv",
+		'summary' => ".\\output\\summary.csv"
+	];
 
     protected function configure()
     {
         $this
             ->setName('email:check')
-            ->setDescription('E-mail validation command. Pass path to CSV file as argument.')
-            ->addArgument('path', InputArgument::REQUIRED, 'File path to CSV file.')
-        ;
+            ->setDescription('E-mail validation command. Pass absolute path to CSV file as argument.')
+            ->addArgument('path', InputArgument::REQUIRED, 'Absolute path to CSV file.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -35,26 +40,35 @@ class EmailValidationCommand extends Command
                 CsvEncoder::KEY_SEPARATOR_KEY => "\n",
                 CsvEncoder::NO_HEADERS_KEY => true,
             ] );
+		
+			$this->eraseFiles();
 
-            foreach($data as $emailArray){
-              $email = $emailArray[0]; // first column
-              if(filter_var($email, FILTER_VALIDATE_EMAIL)){
-                  $this->write('success.csv', "$email\n");
-                  $this->write('summary.csv', "SUCCESS: $email\n");
-              } else {
-                  $this->write('error.csv', "$email\n");
-                  $this->write('summary.csv', "ERROR: $email\n");
-              }
+            foreach($data as $row){
+			  if(count($row) > 0){ // check column numbers more than 0
+				  $email = $row[0]; // get first column
+				  if(filter_var($email, FILTER_VALIDATE_EMAIL)){
+					  $this->write('success', "$email\n");
+					  $this->write('summary', "SUCCESS: $email\n");
+				  } else {
+					  $this->write('error', "$email\n");
+					  $this->write('summary', "ERROR: $email\n");
+				  }
+			  }
             }
-            $output->writeln("Done. Check out success.csv, error.csv and summary.csv files.");
+            $output->writeln("Done! Check out your output directory.");
         } else {
             $output->writeln("File not exists.");
         }
         return Command::SUCCESS;
     }
 
-    private function write(string $path, string $content): void
-    {
-      file_put_contents($path, $content, FILE_APPEND);
+    private function write(string $key, string $content){
+      file_put_contents($this->files[$key], $content, FILE_APPEND);
     }
+	
+	private function eraseFiles(){
+		foreach($this->files as $key => $path){
+			file_put_contents($path, '');
+		}
+    }	
 }
